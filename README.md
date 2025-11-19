@@ -1,4 +1,4 @@
-# RAG App — GitHub Actions 部署到 AWS App Runner
+# RAG App — GitHub Actions 部署到 AWS App Runner 
 
 本项目使用 GitHub Actions 在推送到 `main` 分支时自动构建 Docker 镜像并部署到 AWS App Runner。
 
