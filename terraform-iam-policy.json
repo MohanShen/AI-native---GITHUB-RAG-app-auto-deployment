@@ -1,0 +1,119 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "IAMPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:ListRoles",
+        "iam:UpdateRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:ListRoleTags",
+        "iam:CreatePolicy",
+        "iam:DeletePolicy",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:ListPolicyVersions",
+        "iam:TagPolicy",
+        "iam:UntagPolicy",
+        "iam:ListPolicyTags",
+        "iam:CreateOpenIDConnectProvider",
+        "iam:DeleteOpenIDConnectProvider",
+        "iam:GetOpenIDConnectProvider",
+        "iam:ListOpenIDConnectProviders",
+        "iam:TagOpenIDConnectProvider",
+        "iam:UntagOpenIDConnectProvider",
+        "iam:ListOpenIDConnectProviderTags",
+        "iam:UpdateOpenIDConnectProviderThumbprint",
+        "iam:PassRole"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:DeleteRepository",
+        "ecr:DescribeRepositories",
+        "ecr:PutImageTagMutability",
+        "ecr:PutLifecyclePolicy",
+        "ecr:GetLifecyclePolicy",
+        "ecr:DeleteLifecyclePolicy",
+        "ecr:SetRepositoryPolicy",
+        "ecr:GetRepositoryPolicy",
+        "ecr:DeleteRepositoryPolicy",
+        "ecr:TagResource",
+        "ecr:UntagResource",
+        "ecr:ListTagsForResource",
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:PutImage",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsManagerPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:UpdateSecret",
+        "secretsmanager:RestoreSecret",
+        "secretsmanager:RotateSecret",
+        "secretsmanager:TagResource",
+        "secretsmanager:UntagResource",
+        "secretsmanager:ListSecrets",
+        "secretsmanager:GetResourcePolicy",
+        "secretsmanager:PutResourcePolicy",
+        "secretsmanager:DeleteResourcePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AppRunnerPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "apprunner:CreateService",
+        "apprunner:DeleteService",
+        "apprunner:DescribeService",
+        "apprunner:ListServices",
+        "apprunner:UpdateService",
+        "apprunner:StartDeployment",
+        "apprunner:ListOperations",
+        "apprunner:TagResource",
+        "apprunner:UntagResource",
+        "apprunner:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "STSPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+

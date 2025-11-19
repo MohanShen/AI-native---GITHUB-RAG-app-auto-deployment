@@ -119,6 +119,8 @@ Ensure `.github/workflows/deploy.yml` exists in your repository. It should be au
 
 ### Step 3.1: Trigger the Workflow
 
+## making small change to trigger the workflow
+
 The workflow automatically triggers when you push to `main` branch. If you've already pushed, you can:
 
 1. Make a small change and push again, OR
