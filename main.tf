@@ -41,7 +41,13 @@ resource "aws_iam_policy" "github_actions_policy" {
       {
         Effect = "Allow",
         Action = [
-          "ecr:GetAuthorizationToken",
+          "ecr:GetAuthorizationToken"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
           "ecr:BatchCheckLayerAvailability",
           "ecr:CompleteLayerUpload",
           "ecr:InitiateLayerUpload",
@@ -49,13 +55,6 @@ resource "aws_iam_policy" "github_actions_policy" {
           "ecr:UploadLayerPart"
         ],
         Resource = aws_ecr_repository.rag_app_ecr.arn
-      },
-      {
-        Effect = "Allow",
-        Action = [
-          "ecr:GetAuthorizationToken"
-        ],
-        Resource = "*"
       },
       {
         Effect = "Allow",
