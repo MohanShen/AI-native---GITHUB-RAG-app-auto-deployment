@@ -1,0 +1,120 @@
+name: Deploy to AWS App Runner
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  APP_RUNNER_SERVICE_ARN: ${{ secrets.APP_RUNNER_ARN }}
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Get App Runner service details and role ARNs
+        id: get-service
+        env:
+          SERVICE_ARN: ${{ env.APP_RUNNER_SERVICE_ARN }}
+          SERVICE_NAME: "bee-edu-rag-service"
+        run: |
+          # Set service name (use hardcoded name from Terraform)
+          echo "SERVICE_NAME=$SERVICE_NAME" >> $GITHUB_OUTPUT
+          
+          # Try to get role ARNs from existing service, or get from IAM if service doesn't exist
+          ACCESS_ROLE_ARN=""
+          INSTANCE_ROLE_ARN=""
+          
+          if [ -n "$SERVICE_ARN" ] && [ "$SERVICE_ARN" != "null" ] && [[ "$SERVICE_ARN" == arn:* ]]; then
+            echo "Service ARN provided, attempting to get role ARNs from existing service..."
+            if SERVICE_INFO=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --region "$AWS_REGION" --output json 2>/dev/null); then
+              ACCESS_ROLE_ARN=$(echo $SERVICE_INFO | jq -r '.Service.SourceConfiguration.AuthenticationConfiguration.AccessRoleArn // empty')
+              INSTANCE_ROLE_ARN=$(echo $SERVICE_INFO | jq -r '.Service.InstanceConfiguration.InstanceRoleArn // empty')
+              echo "✅ Retrieved role ARNs from existing service"
+            else
+              echo "⚠️  Service not found or error accessing service, will get role ARNs from IAM"
+            fi
+          else
+            echo "⚠️  Service ARN not provided or invalid, will get role ARNs from IAM"
+          fi
+          
+          # If we couldn't get from service, get from IAM using known role names
+          if [ -z "$ACCESS_ROLE_ARN" ] || [ "$ACCESS_ROLE_ARN" == "null" ]; then
+            echo "Getting access role ARN from IAM..."
+            ACCESS_ROLE_ARN=$(aws iam get-role --role-name "bee-edu-apprunner-role" --query 'Role.Arn' --output text 2>/dev/null || echo "")
+            if [ -z "$ACCESS_ROLE_ARN" ]; then
+              echo "Error: Could not retrieve access-role-arn from IAM"
+              exit 1
+            fi
+          fi
+          
+          if [ -z "$INSTANCE_ROLE_ARN" ] || [ "$INSTANCE_ROLE_ARN" == "null" ]; then
+            echo "Getting instance role ARN from IAM..."
+            INSTANCE_ROLE_ARN=$(aws iam get-role --role-name "bee-edu-apprunner-instance-role" --query 'Role.Arn' --output text 2>/dev/null || echo "")
+            if [ -z "$INSTANCE_ROLE_ARN" ]; then
+              echo "Error: Could not retrieve instance-role-arn from IAM"
+              exit 1
+            fi
+          fi
+          
+          # Get the secret ARN for OpenAI API Key (query by secret name)
+          SECRET_NAME="bee-edu-openai-key-secret"
+          SECRET_ARN=$(aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region "$AWS_REGION" --query 'ARN' --output text)
+          
+          if [ -z "$SECRET_ARN" ] || [ "$SECRET_ARN" == "None" ]; then
+            echo "Error: Could not retrieve secret ARN for $SECRET_NAME"
+            exit 1
+          fi
+          
+          echo "ACCESS_ROLE_ARN=$ACCESS_ROLE_ARN" >> $GITHUB_OUTPUT
+          echo "INSTANCE_ROLE_ARN=$INSTANCE_ROLE_ARN" >> $GITHUB_OUTPUT
+          echo "SECRET_ARN=$SECRET_ARN" >> $GITHUB_OUTPUT
+          echo "✅ Retrieved role ARNs:"
+          echo "   Access Role: $ACCESS_ROLE_ARN"
+          echo "   Instance Role: $INSTANCE_ROLE_ARN"
+          echo "   Secret ARN: $SECRET_ARN"
+
+      - name: Deploy to App Runner
+        uses: awslabs/amazon-app-runner-deploy@main
+        with:
+          service: ${{ steps.get-service.outputs.SERVICE_NAME }}
+          image: ${{ env.IMAGE_URI }}
+          region: ${{ env.AWS_REGION }}
+          access-role-arn: ${{ steps.get-service.outputs.ACCESS_ROLE_ARN }}
+          instance-role-arn: ${{ steps.get-service.outputs.INSTANCE_ROLE_ARN }}
+          port: 8080
+          cpu: 1
+          memory: 2
+          wait-for-service-stability-seconds: 600
+          runtime-environment-secrets: |
+            OPENAI_API_KEY=${{ steps.get-service.outputs.SECRET_ARN }}
+
